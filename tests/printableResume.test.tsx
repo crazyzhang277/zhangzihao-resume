@@ -51,5 +51,6 @@ describe('PrintableResume', () => {
     expect(printStyles).toMatch(/height:\s*281mm !important;/)
     expect(printStyles).toMatch(/width:\s*190mm !important;/)
     expect(printStyles).toMatch(/\.printable-resume, \.printable-resume \*\s*\{\s*animation:\s*none !important;/s)
+    expect(printStyles).toMatch(/background:\s*transparent !important;/)
   })
 })
