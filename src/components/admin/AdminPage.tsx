@@ -118,7 +118,7 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
         <SyncStatus result={syncResult ?? latestSync} />
       </section>
       <AdminContentForm content={resume} onSave={saveResume} />
-      <AdminProjects onSaveOverrides={repository.updateProjectOverrides} onSaveVisibility={repository.updateProjectVisibility} projects={projects} />
+      <AdminProjects onSaveSettings={repository.saveProjectSettings} projects={projects} />
     </main>
   )
 }

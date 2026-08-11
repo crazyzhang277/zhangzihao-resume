@@ -52,6 +52,10 @@ describe('public resume visual shell', () => {
       clearRect: vi.fn(),
       createRadialGradient: vi.fn(),
       fillRect: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      bezierCurveTo: vi.fn(),
+      stroke: vi.fn(),
     } as unknown as CanvasRenderingContext2D
 
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue(compactViewport as unknown as MediaQueryList))

@@ -141,6 +141,12 @@ a { color: inherit; }
 .admin-sync__result p { margin: .2rem 0; }
 .admin-content-form fieldset, .admin-project { border: 1px solid var(--color-rule); display: grid; gap: var(--space-1); margin: 0; padding: var(--space-2); }
 .admin-content-form legend, .admin-project legend { font-weight: 800; padding-inline: .25rem; }
+.admin-structured-sections > fieldset { display: grid; gap: var(--space-2); }
+.admin-structured-item { background: rgb(255 255 255 / 36%); }
+.admin-structured-fields { display: grid; gap: var(--space-1); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-structured-array { display: grid; gap: var(--space-1); }
+.admin-structured-nested { border-color: rgb(22 33 29 / 12%); padding: var(--space-1); }
+.admin-structured-nested legend { color: var(--color-muted); font-size: .75rem; }
 .admin-field-grid, .admin-project__controls { display: grid; gap: var(--space-1); grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .admin-content-form label, .admin-project label, .admin-structured-sections > label { display: grid; font-size: .84rem; font-weight: 750; gap: .35rem; }
 .admin-content-form input, .admin-content-form textarea, .admin-project input, .admin-project textarea { background: rgb(255 255 255 / 66%); border: 1px solid var(--color-rule); border-radius: 0; color: var(--color-ink); font: inherit; min-block-size: 2.4rem; padding: .5rem; }
@@ -169,7 +175,7 @@ a { color: inherit; }
   .resume-section h2 { font-size: 2.5rem; }
   .admin-page { padding-block-start: 2rem; }
   .admin-page h1 { font-size: 2.25rem; }
-  .admin-sync, .admin-field-grid, .admin-project__controls { grid-template-columns: 1fr; }
+  .admin-sync, .admin-field-grid, .admin-project__controls, .admin-structured-fields { grid-template-columns: 1fr; }
   .admin-sync__result { grid-column: auto; }
   .impact-grid, .project-grid, .portfolio-grid, .experience-layout, .education-layout, .skill-panel ul { grid-template-columns: 1fr; }
   .experience-layout { gap: var(--space-3); }

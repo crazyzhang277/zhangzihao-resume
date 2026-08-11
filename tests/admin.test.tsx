@@ -27,6 +27,7 @@ function ownerRepository(overrides: Partial<TestRepository> = {}): TestRepositor
       finishedAt: '2026-08-11T09:00:00.000Z',
     }),
     saveResume: vi.fn().mockResolvedValue(undefined),
+    saveProjectSettings: vi.fn().mockResolvedValue(undefined),
     updateProjectVisibility: vi.fn().mockResolvedValue(undefined),
     updateProjectOverrides: vi.fn().mockResolvedValue(undefined),
     triggerGitHubSync: vi.fn().mockResolvedValue({ status: 'success', fetched: 8, written: 6, filtered: 2, error: null }),
@@ -150,8 +151,7 @@ describe('AdminPage', () => {
     fireEvent.change(screen.getByLabelText(`Manual description ${project.name}`), { target: { value: 'Curated description' } })
     fireEvent.click(screen.getByRole('button', { name: `Save ${project.name}` }))
 
-    await waitFor(() => expect(repository.updateProjectVisibility).toHaveBeenCalledWith(project.githubId, false, 3))
-    expect(repository.updateProjectOverrides).toHaveBeenCalledWith(project.githubId, 'Curated title', 'Curated description')
+    await waitFor(() => expect(repository.saveProjectSettings).toHaveBeenCalledWith(project.githubId, false, 3, 'Curated title', 'Curated description'))
     expect(controls).toHaveTextContent('Project settings saved.')
     expect(screen.getByText(/zeroaigen-auto-mention is permanently excluded/i)).toBeVisible()
   })

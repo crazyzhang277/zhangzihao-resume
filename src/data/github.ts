@@ -18,6 +18,10 @@ export type GitHubRepository = {
 
 export type ProjectOverride = Pick<Project, 'githubId' | 'visible' | 'featuredRank' | 'manualTitle' | 'manualDescription'>
 
+export function isPublicProject(project: Pick<Project, 'name' | 'visible'>): boolean {
+  return project.visible && project.name.toLowerCase() !== excludedRepositorySlug
+}
+
 export function filterAndMapGitHubRepositories(repositories: GitHubRepository[], overrides: ProjectOverride[] = []): Project[] {
   const overridesById = new Map(overrides.map((override) => [override.githubId, override]))
 
@@ -41,7 +45,7 @@ export function filterAndMapGitHubRepositories(repositories: GitHubRepository[],
         manualDescription: override?.manualDescription ?? null,
       }
     })
-    .filter((project) => project.visible))
+    .filter(isPublicProject))
 }
 
 export function sortProjects(projects: Project[]): Project[] {

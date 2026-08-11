@@ -77,7 +77,9 @@ export async function fetchGitHubRepositories(
       const page = await response.json()
       if (!Array.isArray(page)) throw new Error('GitHub repository response was not an array')
 
-      const pageRepositories = page as GitHubRepository[]
+      if (!page.every(isGitHubRepository)) throw new Error('GitHub repository response contained an invalid repository record')
+
+      const pageRepositories = page
       const includedRepositories = pageRepositories.filter(shouldInclude)
       fetched += pageRepositories.length
       filtered += pageRepositories.length - includedRepositories.length
@@ -125,4 +127,24 @@ function nextPageUrl(linkHeader: string | null): string | null {
   if (!linkHeader) return null
   const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
   return match?.[1] ?? null
+}
+
+function isGitHubRepository(value: unknown): value is GitHubRepository {
+  if (!isRecord(value)) return false
+  return typeof value.id === 'number'
+    && typeof value.name === 'string'
+    && typeof value.full_name === 'string'
+    && typeof value.html_url === 'string'
+    && (value.description === null || typeof value.description === 'string')
+    && (value.language === null || typeof value.language === 'string')
+    && (value.topics === undefined || (Array.isArray(value.topics) && value.topics.every((topic) => typeof topic === 'string')))
+    && typeof value.stargazers_count === 'number'
+    && typeof value.forks_count === 'number'
+    && typeof value.updated_at === 'string'
+    && typeof value.fork === 'boolean'
+    && typeof value.archived === 'boolean'
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
-import { excludedRepositorySlug } from '../../data/github'
+import { isPublicProject } from '../../data/github'
 import type { Project } from '../../types/content'
 import { ProjectCard } from './ProjectCard'
 
 export function ProjectGrid({ projects }: { projects: Project[] }) {
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null)
-  const visibleProjects = projects.filter((project) => project.visible && project.name.toLowerCase() !== excludedRepositorySlug)
+  const visibleProjects = projects.filter(isPublicProject)
 
   return (
     <div className="project-grid">

@@ -1,4 +1,4 @@
-import { excludedRepositorySlug } from '../../data/github'
+import { isPublicProject } from '../../data/github'
 import type { Project, ResumeContent } from '../../types/content'
 
 type PrintableResumeProps = {
@@ -9,7 +9,7 @@ type PrintableResumeProps = {
 const printableProjectProofLimit = 4
 
 export function PrintableResume({ projects, resume }: PrintableResumeProps) {
-  const visibleProjects = projects.filter((project) => project.visible && project.name.toLowerCase() !== excludedRepositorySlug)
+  const visibleProjects = projects.filter(isPublicProject)
   const proofProjects = visibleProjects.slice(0, printableProjectProofLimit)
 
   return (
@@ -41,7 +41,7 @@ export function PrintableResume({ projects, resume }: PrintableResumeProps) {
         {resume.experience.map((entry) => (
           <article key={`${entry.company}-${entry.period}`}>
             <div className="printable-resume__entry-heading"><div><h3>{entry.company}</h3><p>{entry.department} | {entry.role}</p></div><p>{entry.period}<br />{entry.status}</p></div>
-            <ul>{entry.duties.map((duty) => <li key={duty.title}>{duty.title}</li>)}</ul>
+            <ul>{entry.duties.map((duty) => <li key={duty.title}><strong>{duty.title}</strong><span>{duty.description}</span></li>)}</ul>
           </article>
         ))}
         <div className="printable-resume__sop"><h3>Production SOP</h3><ol>{resume.sop.map((step) => <li key={step.title}>{step.title}</li>)}</ol></div>

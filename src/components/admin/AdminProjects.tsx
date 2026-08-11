@@ -4,17 +4,16 @@ import type { Project } from '../../types/content'
 
 type AdminProjectsProps = {
   projects: Project[]
-  onSaveVisibility(githubId: number, visible: boolean, featuredRank: number | null): Promise<void>
-  onSaveOverrides(githubId: number, manualTitle: string | null, manualDescription: string | null): Promise<void>
+  onSaveSettings(githubId: number, visible: boolean, featuredRank: number | null, manualTitle: string | null, manualDescription: string | null): Promise<void>
 }
 
-export function AdminProjects({ projects, onSaveVisibility, onSaveOverrides }: AdminProjectsProps) {
+export function AdminProjects({ projects, onSaveSettings }: AdminProjectsProps) {
   return (
     <section className="admin-projects" aria-labelledby="admin-projects-heading">
       <header><h2 id="admin-projects-heading">GitHub projects</h2><p>Control public visibility, feature ordering, and display overrides without changing synced repository data.</p></header>
       <aside className="admin-exclusion" aria-label="Permanent project exclusion">zeroaigen-auto-mention is permanently excluded from sync and cannot be changed here.</aside>
       <div className="admin-project-list">
-        {projects.map((project) => <ProjectControls key={project.githubId} onSaveOverrides={onSaveOverrides} onSaveVisibility={onSaveVisibility} project={project} />)}
+        {projects.map((project) => <ProjectControls key={project.githubId} onSaveSettings={onSaveSettings} project={project} />)}
       </div>
     </section>
   )
@@ -22,7 +21,7 @@ export function AdminProjects({ projects, onSaveVisibility, onSaveOverrides }: A
 
 type ProjectControlsProps = Omit<AdminProjectsProps, 'projects'> & { project: Project }
 
-function ProjectControls({ project, onSaveVisibility, onSaveOverrides }: ProjectControlsProps) {
+function ProjectControls({ project, onSaveSettings }: ProjectControlsProps) {
   const [visible, setVisible] = useState(project.visible)
   const [featuredRank, setFeaturedRank] = useState(project.featuredRank?.toString() ?? '')
   const [manualTitle, setManualTitle] = useState(project.manualTitle ?? '')
@@ -48,8 +47,7 @@ function ProjectControls({ project, onSaveVisibility, onSaveOverrides }: Project
     setStatus(null)
     setError(null)
     try {
-      await onSaveVisibility(project.githubId, visible, parsedRank)
-      await onSaveOverrides(project.githubId, manualTitle.trim() || null, manualDescription.trim() || null)
+      await onSaveSettings(project.githubId, visible, parsedRank, manualTitle.trim() || null, manualDescription.trim() || null)
       setStatus('Project settings saved.')
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to save project settings.')

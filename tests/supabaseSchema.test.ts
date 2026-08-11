@@ -15,6 +15,8 @@ describe('Supabase schema fixture', () => {
     expect(migration).toMatch(/create policy "public can read visible projects"[\s\S]*?using \(visible\)/i)
     expect(migration).toMatch(/create policy "public can read published profile content"[\s\S]*?using \(published\)/i)
     expect(migration).toContain("'zeroaigen-auto-mention'")
+    expect(migration).toMatch(/create function public\.apply_github_sync\(p_projects jsonb, p_synced_at timestamptz\)[\s\S]*?on conflict \(github_id\) do update/i)
+    expect(migration).toMatch(/revoke all on function public\.apply_github_sync\(jsonb, timestamptz\) from public, anon, authenticated/i)
   })
 
   it('enables RLS and makes every write policy check the authenticated owner claim', () => {

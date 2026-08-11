@@ -92,19 +92,12 @@ async function syncGitHubProjects(supabase: ReturnType<typeof createClient>, git
       }
     })
 
-    if (projectRows.length > 0) {
-      const { error: upsertError } = await supabase.from('projects').upsert(projectRows, { onConflict: 'github_id' })
-      if (upsertError) throw upsertError
-    }
-    written = projectRows.length
-
-    let staleQuery = supabase
-      .from('projects')
-      .update({ stale: true, visible: false, record_updated_at: now })
-      .eq('source', 'github')
-    if (projectRows.length > 0) staleQuery = staleQuery.not('github_id', 'in', `(${projectRows.map((project) => project.github_id).join(',')})`)
-    const { error: staleError } = await staleQuery
-    if (staleError) throw staleError
+    const { data: writtenCount, error: syncError } = await supabase.rpc('apply_github_sync', {
+      p_projects: projectRows,
+      p_synced_at: now,
+    })
+    if (syncError) throw syncError
+    written = typeof writtenCount === 'number' ? writtenCount : projectRows.length
 
     result = {
       status: 'success',

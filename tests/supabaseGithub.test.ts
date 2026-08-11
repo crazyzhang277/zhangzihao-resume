@@ -70,6 +70,18 @@ describe('GitHub sync helpers', () => {
     })
     expect(result.error?.message).toBe('GitHub repository fetch failed with 502')
   })
+
+  it('fails safely when GitHub returns a malformed repository record', async () => {
+    const result = await fetchGitHubRepositories(
+      'https://api.github.test/repos?page=1',
+      async () => githubResponse(200, [{ id: 'not-a-number' }]),
+      () => true,
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.repositories).toBeNull()
+    expect(result.error?.message).toMatch(/invalid repository record/i)
+  })
 })
 
 function githubResponse(status: number, body: unknown, link: string | null = null) {

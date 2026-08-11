@@ -28,6 +28,7 @@ export interface AdminRepository {
   getProjects(): Promise<Project[]>
   getLatestSyncRun(): Promise<SyncRun | null>
   saveResume(content: ResumeContent): Promise<void>
+  saveProjectSettings(githubId: number, visible: boolean, featuredRank: number | null, manualTitle: string | null, manualDescription: string | null): Promise<void>
   updateProjectVisibility(githubId: number, visible: boolean, featuredRank: number | null): Promise<void>
   updateProjectOverrides(githubId: number, manualTitle: string | null, manualDescription: string | null): Promise<void>
   triggerGitHubSync(): Promise<SyncRunResult>
@@ -85,6 +86,19 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
         ? configuredClient.from('profile_content').update(payload).eq('id', profileId)
         : configuredClient.from('profile_content').insert(payload)
       const { error } = await query
+      if (error) throw error
+    },
+    async saveProjectSettings(githubId, visible, featuredRank, manualTitle, manualDescription) {
+      const configuredClient = requireClient(client)
+      const { error } = await configuredClient.from('projects')
+        .update({
+          visible,
+          featured_rank: featuredRank,
+          manual_title: manualTitle,
+          manual_description: manualDescription,
+          record_updated_at: new Date().toISOString(),
+        })
+        .eq('github_id', githubId)
       if (error) throw error
     },
     async updateProjectVisibility(githubId, visible, featuredRank) {

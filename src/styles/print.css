@@ -38,8 +38,9 @@
   .printable-resume__entry-heading { align-items: start; display: flex; font-size: 7.5pt; justify-content: space-between; line-height: 1.25; }
   .printable-resume__entry-heading h3, .printable-resume__sop h3 { font-size: 8.5pt; }
   .printable-resume__entry-heading > p { font-size: 7pt; text-align: right; }
-  .printable-resume__experience ul { columns: 2; font-size: 7pt; line-height: 1.28; margin: 1mm 0 0; padding-inline-start: 3mm; }
+  .printable-resume__experience ul { columns: 2; font-size: 6.5pt; line-height: 1.22; margin: 1mm 0 0; padding-inline-start: 3mm; }
   .printable-resume__experience li { break-inside: avoid; margin-block-end: .55mm; }
+  .printable-resume__experience li strong { margin-inline-end: .5mm; }
   .printable-resume__sop { border-inline-start: .25mm solid #999; padding-inline-start: 2mm; }
   .printable-resume__sop ol { display: grid; font-size: 7pt; gap: .75mm; line-height: 1.2; margin: 1mm 0 0; padding-inline-start: 3mm; }
   .printable-resume__details { display: grid; gap: 1mm; grid-template-columns: 27mm minmax(0, 1fr); }

@@ -24,11 +24,12 @@ describe('PrintableResume', () => {
     expect(document).toHaveStyle({ height: '297mm', width: '210mm' })
     expect(within(document).getByText(`${fallbackResume.experience[0].department} | ${fallbackResume.experience[0].role}`)).toBeVisible()
     expect(within(document).getByText(fallbackResume.experience[0].company)).toBeVisible()
+    expect(within(document).getByText(fallbackResume.experience[0].duties[0].description)).toBeVisible()
     expect(within(document).getByText(fallbackResume.profile.email)).toBeVisible()
     expect(within(document).getByText(fallbackResume.profile.phone)).toBeVisible()
 
     for (const metric of fallbackResume.impact) {
-      expect(within(document).getByText(metric.number, { exact: false })).toBeVisible()
+      expect(within(document).getAllByText(metric.number, { exact: false }).some((element) => element.tagName === 'STRONG')).toBe(true)
       expect(within(document).getByText(metric.title)).toBeVisible()
     }
     for (const step of fallbackResume.sop) expect(within(document).getByText(step.title)).toBeVisible()

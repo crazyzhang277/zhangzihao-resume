@@ -73,6 +73,23 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
         context.fillRect(0, 0, width, height)
       })
 
+      centers.forEach(([x, y], index) => {
+        context.beginPath()
+        context.moveTo(-width * 0.08, y)
+        context.bezierCurveTo(
+          width * 0.22,
+          y - height * (0.18 + index * 0.025) + Math.sin(time * 0.00006 + index) * height * 0.04,
+          width * 0.68,
+          y + height * (0.16 - index * 0.02) + Math.cos(time * 0.00005 + index) * height * 0.04,
+          width * 1.08,
+          y + Math.sin(time * 0.00007 + index) * height * 0.1,
+        )
+        context.strokeStyle = `${colors[index]}3d`
+        context.lineWidth = Math.max(10, width * 0.012)
+        context.lineCap = 'round'
+        context.stroke()
+      })
+
       schedule()
     }
 

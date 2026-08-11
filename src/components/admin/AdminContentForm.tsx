@@ -20,14 +20,12 @@ const structuredFields = [
 
 export function AdminContentForm({ content, onSave }: AdminContentFormProps) {
   const [draft, setDraft] = useState(content)
-  const [structuredContent, setStructuredContent] = useState(() => stringifyContent(content))
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     setDraft(content)
-    setStructuredContent(stringifyContent(content))
   }, [content])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -36,7 +34,7 @@ export function AdminContentForm({ content, onSave }: AdminContentFormProps) {
     setStatus(null)
     let nextContent: ResumeContent
     try {
-      nextContent = buildContent(draft, structuredContent)
+      nextContent = buildContent(draft)
     } catch (caught) {
       setError(message(caught))
       return
@@ -80,9 +78,15 @@ export function AdminContentForm({ content, onSave }: AdminContentFormProps) {
       </fieldset>
       <section aria-label="Structured resume sections" className="admin-structured-sections">
         {structuredFields.map(([label, field]) => (
-          <label key={field}>{label}<textarea aria-describedby={`${field}-help`} aria-label={label} onChange={(event) => setStructuredContent((current) => ({ ...current, [field]: event.target.value }))} rows={8} value={structuredContent[field]} />
-            <span id={`${field}-help`}>Use a JSON array. Item order is preserved.</span>
-          </label>
+          <fieldset aria-label={label} key={field}>
+            <legend>{label}</legend>
+            {(draft[field] as unknown[]).map((item, index) => (
+              <fieldset className="admin-structured-item" key={`${field}-${index}`}>
+                <legend>{label} {index + 1}</legend>
+                <StructuredValueEditor onChange={(nextValue) => updateStructuredValue(field, index, nextValue, setDraft)} prefix={`${label} ${index + 1}`} value={item} />
+              </fieldset>
+            ))}
+          </fieldset>
         ))}
       </section>
       {error ? <p className="admin-feedback admin-feedback--error" role="alert">{error}</p> : null}
@@ -92,24 +96,52 @@ export function AdminContentForm({ content, onSave }: AdminContentFormProps) {
   )
 }
 
-type StructuredContent = Record<(typeof structuredFields)[number][1], string>
-
-function stringifyContent(content: ResumeContent): StructuredContent {
-  return Object.fromEntries(structuredFields.map(([, field]) => [field, JSON.stringify(content[field], null, 2)])) as StructuredContent
+function buildContent(draft: ResumeContent): ResumeContent {
+  if (!isResumeContent(draft)) throw new Error('Resume content is invalid.')
+  return draft
 }
 
-function buildContent(draft: ResumeContent, structuredContent: StructuredContent): ResumeContent {
-  const parsed = Object.fromEntries(structuredFields.map(([, field]) => [field, parseArray(field, structuredContent[field])]))
-  const content: unknown = { ...draft, ...parsed }
-  if (!isResumeContent(content)) throw new Error('Resume content is invalid.')
-  return content
+function updateStructuredValue(
+  field: (typeof structuredFields)[number][1],
+  index: number,
+  nextValue: unknown,
+  setDraft: React.Dispatch<React.SetStateAction<ResumeContent>>,
+) {
+  setDraft((current) => ({
+    ...current,
+    [field]: (current[field] as unknown[]).map((item, itemIndex) => itemIndex === index ? nextValue : item),
+  }) as ResumeContent)
 }
 
-function parseArray(label: string, value: string): unknown[] {
-  let parsed: unknown
-  try { parsed = JSON.parse(value) } catch { throw new Error(`${label} must contain valid JSON.`) }
-  if (!Array.isArray(parsed)) throw new Error(`${label} must be a JSON array.`)
-  return parsed
+function StructuredValueEditor({ value, onChange, prefix = '' }: { value: unknown; onChange: (value: unknown) => void; prefix?: string }) {
+  if (Array.isArray(value)) {
+    return <div className="admin-structured-array">{value.map((item, index) => <fieldset className="admin-structured-nested" key={index}><legend>Item {index + 1}</legend><StructuredValueEditor onChange={(nextValue) => onChange(value.map((current, itemIndex) => itemIndex === index ? nextValue : current))} prefix={prefix} value={item} /></fieldset>)}</div>
+  }
+
+  if (isRecord(value)) {
+    return <div className="admin-structured-fields">{Object.entries(value).map(([key, child]) => {
+      const fieldLabel = [prefix, formatFieldLabel(key)].filter(Boolean).join(' ')
+      return <label key={key}>{fieldLabel}<StructuredValueEditor onChange={(nextValue) => onChange({ ...value, [key]: nextValue })} prefix={fieldLabel} value={child} /></label>
+    })}</div>
+  }
+
+  if (typeof value === 'string') {
+    return value.length > 80
+      ? <textarea onChange={(event) => onChange(event.target.value)} rows={4} value={value} />
+      : <input onChange={(event) => onChange(event.target.value)} value={value} />
+  }
+
+  if (typeof value === 'number') return <input onChange={(event) => onChange(Number(event.target.value))} type="number" value={value} />
+  if (typeof value === 'boolean') return <input checked={value} onChange={(event) => onChange(event.target.checked)} type="checkbox" />
+  return null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function formatFieldLabel(value: string): string {
+  return value.replace(/([A-Z])/g, ' $1').replace(/^./, (character) => character.toUpperCase())
 }
 
 function message(error: unknown): string {
