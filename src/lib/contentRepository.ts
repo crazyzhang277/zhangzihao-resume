@@ -36,7 +36,7 @@ export function createContentRepository(client: SupabaseClient | null = supabase
   }
 }
 
-function isResumeContent(value: unknown): value is ResumeContent {
+export function isResumeContent(value: unknown): value is ResumeContent {
   if (!isRecord(value)) return false
   return isProfile(value.profile)
     && isArrayOf(value.impact, isImpactMetric)

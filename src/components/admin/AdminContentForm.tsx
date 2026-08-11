@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { isResumeContent } from '../../lib/contentRepository'
 import type { ResumeContent } from '../../types/content'
 
 type AdminContentFormProps = {
@@ -99,7 +100,9 @@ function stringifyContent(content: ResumeContent): StructuredContent {
 
 function buildContent(draft: ResumeContent, structuredContent: StructuredContent): ResumeContent {
   const parsed = Object.fromEntries(structuredFields.map(([, field]) => [field, parseArray(field, structuredContent[field])]))
-  return { ...draft, ...parsed } as ResumeContent
+  const content: unknown = { ...draft, ...parsed }
+  if (!isResumeContent(content)) throw new Error('Resume content is invalid.')
+  return content
 }
 
 function parseArray(label: string, value: string): unknown[] {

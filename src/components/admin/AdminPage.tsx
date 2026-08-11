@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { AdminContentForm } from './AdminContentForm'
 import { AdminProjects } from './AdminProjects'
-import { createAdminRepository, type AdminRepository, type SyncRunResult, type SyncRun } from '../../lib/adminRepository'
+import { createAdminRepository, type AdminRepository, type AdminSession, type SyncRunResult, type SyncRun } from '../../lib/adminRepository'
 import type { Project, ResumeContent } from '../../types/content'
 
 const defaultRepository = createAdminRepository()
@@ -21,14 +21,29 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
 
   useEffect(() => {
     let active = true
-    async function load() {
+    let loadVersion = 0
+
+    function clearOwnerState() {
+      setResume(null)
+      setProjects([])
+      setLatestSync(null)
+      setSyncResult(null)
+      setLoadError(null)
+      setIsSyncing(false)
+    }
+
+    async function load(sessionFromEvent?: AdminSession | null) {
+      const currentLoad = ++loadVersion
+      const isCurrent = () => active && currentLoad === loadVersion
+      clearOwnerState()
       if (!repository.isConfigured) {
-        if (active) setPageState('unconfigured')
+        if (isCurrent()) setPageState('unconfigured')
         return
       }
+      setPageState('loading')
       try {
-        const session = await repository.getSession()
-        if (!active) return
+        const session = sessionFromEvent === undefined ? await repository.getSession() : sessionFromEvent
+        if (!isCurrent()) return
         if (!session) {
           setPageState('unauthenticated')
           return
@@ -42,19 +57,26 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
           repository.getProjects(),
           repository.getLatestSyncRun(),
         ])
-        if (!active) return
+        if (!isCurrent()) return
         setResume(loadedResume)
         setProjects(loadedProjects)
         setLatestSync(loadedSync)
         setPageState('ready')
       } catch (caught) {
-        if (!active) return
+        if (!isCurrent()) return
         setLoadError(message(caught))
         setPageState('error')
       }
     }
+
+    const unsubscribe = repository.isConfigured
+      ? repository.subscribeToAuthStateChange((session) => { void load(session) })
+      : () => undefined
     void load()
-    return () => { active = false }
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [repository])
 
   async function saveResume(content: ResumeContent) {

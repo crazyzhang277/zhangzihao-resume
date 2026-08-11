@@ -1,8 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { FunctionsHttpError, type SupabaseClient } from '@supabase/supabase-js'
 
 import { mapProjectRecord, sortProjects } from '../data/github'
 import { fallbackResume } from '../data/profile'
 import type { Project, ResumeContent } from '../types/content'
+import { isResumeContent } from './contentRepository'
 import { supabase } from './supabase'
 
 export type SyncRunResult = {
@@ -22,6 +23,7 @@ export type AdminSession = {
 export interface AdminRepository {
   isConfigured: boolean
   getSession(): Promise<AdminSession | null>
+  subscribeToAuthStateChange(subscriber: (session: AdminSession | null) => void): () => void
   getResume(): Promise<ResumeContent>
   getProjects(): Promise<Project[]>
   getLatestSyncRun(): Promise<SyncRun | null>
@@ -40,9 +42,12 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
       const configuredClient = requireClient(client)
       const { data, error } = await configuredClient.auth.getSession()
       if (error) throw error
-      if (!data.session) return null
-      const appMetadata = data.session.user.app_metadata
-      return { appMetadata: isRecord(appMetadata) && typeof appMetadata.role === 'string' ? { role: appMetadata.role } : {} }
+      return mapAdminSession(data.session)
+    },
+    subscribeToAuthStateChange(subscriber) {
+      const configuredClient = requireClient(client)
+      const { data } = configuredClient.auth.onAuthStateChange((_event, session) => subscriber(mapAdminSession(session)))
+      return () => data.subscription.unsubscribe()
     },
     async getResume() {
       const configuredClient = requireClient(client)
@@ -52,9 +57,9 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
         .limit(1)
       if (error) throw error
       const record = Array.isArray(data) ? data[0] : null
-      if (!isRecord(record) || typeof record.id !== 'string' || !isRecord(record.content)) return fallbackResume
+      if (!isRecord(record) || typeof record.id !== 'string' || !isResumeContent(record.content)) return fallbackResume
       profileId = record.id
-      return record.content as ResumeContent
+      return record.content
     },
     async getProjects() {
       const configuredClient = requireClient(client)
@@ -74,6 +79,7 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
     },
     async saveResume(content) {
       const configuredClient = requireClient(client)
+      if (!isResumeContent(content)) throw new Error('Resume content is invalid.')
       const payload = { content, published: true, updated_at: new Date().toISOString() }
       const query = profileId
         ? configuredClient.from('profile_content').update(payload).eq('id', profileId)
@@ -98,9 +104,12 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
     async triggerGitHubSync() {
       const configuredClient = requireClient(client)
       const { data, error } = await configuredClient.functions.invoke<SyncRunResult>('sync-github-projects', { method: 'POST' })
+      if (isSyncResult(data)) return data
+      const errorPayload = await readFunctionErrorPayload(error)
+      if (isSyncResult(errorPayload)) return errorPayload
+      if (typeof errorPayload?.error === 'string') throw new Error(errorPayload.error)
       if (error) throw error
-      if (!isSyncResult(data)) throw new Error('The sync service returned an invalid response.')
-      return data
+      throw new Error('The sync service returned an invalid response.')
     },
   }
 }
@@ -108,6 +117,12 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
 function requireClient(client: SupabaseClient | null): SupabaseClient {
   if (!client) throw new Error('Supabase browser configuration is unavailable.')
   return client
+}
+
+function mapAdminSession(session: { user: { app_metadata: unknown } } | null): AdminSession | null {
+  if (!session) return null
+  const appMetadata = session.user.app_metadata
+  return { appMetadata: isRecord(appMetadata) && typeof appMetadata.role === 'string' ? { role: appMetadata.role } : {} }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -121,6 +136,20 @@ function isSyncResult(value: unknown): value is SyncRunResult {
     && typeof value.written === 'number'
     && typeof value.filtered === 'number'
     && (typeof value.error === 'string' || value.error === null)
+}
+
+async function readFunctionErrorPayload(error: unknown): Promise<Record<string, unknown> | null> {
+  if (!(error instanceof FunctionsHttpError) || !isRecord(error.context)) return null
+  const response = error.context
+  if (typeof response.clone !== 'function') return null
+  const copy = response.clone()
+  if (typeof copy.json !== 'function') return null
+  try {
+    const payload: unknown = await copy.json()
+    return isRecord(payload) ? payload : null
+  } catch {
+    return null
+  }
 }
 
 function mapSyncRun(value: unknown): SyncRun | null {
