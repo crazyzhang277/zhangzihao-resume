@@ -47,13 +47,13 @@ a { color: inherit; }
 .section-nav a { color: var(--color-muted); font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-decoration: none; text-transform: uppercase; }
 .section-nav a span { color: var(--color-ink); margin-inline-end: .25rem; opacity: .5; }
 .section-nav a[aria-current='location'] { color: var(--color-ink); }
-.reading-progress { background: linear-gradient(90deg, var(--color-red), var(--color-yellow), var(--color-green), var(--color-blue)); block-size: 2px; inset: 0 auto auto 0; position: fixed; transform: scaleX(0); transform-origin: left; width: 100%; z-index: 3; }
+.reading-progress { background: linear-gradient(90deg, var(--color-red), var(--color-yellow), var(--color-green), var(--color-blue)); block-size: 2px; inset: 0 auto auto 0; position: fixed; transform: scaleX(var(--section-progress, 0)); transform-origin: left; width: 100%; z-index: 3; }
 
 .resume-content { margin: 0 auto; max-inline-size: var(--content-width); padding: 0 var(--page-gutter); }
 .resume-section { border-block-end: 1px solid var(--color-rule); display: grid; min-block-size: min(76vh, 46rem); padding-block: clamp(6rem, 15vh, 12rem) var(--space-5); position: relative; scroll-margin-top: 4rem; }
 .resume-section--hero { align-items: end; min-block-size: 100vh; }
-.resume-section h1, .resume-section h2 { font-size: clamp(2.25rem, 8vw, 8.5rem); font-weight: 780; letter-spacing: 0; line-height: .92; margin: 0; max-inline-size: 12ch; text-wrap: balance; }
-.resume-section h2 { font-size: clamp(2rem, 5vw, 5.8rem); }
+.resume-section h1, .resume-section h2 { font-size: 7rem; font-weight: 780; letter-spacing: 0; line-height: .92; margin: 0; max-inline-size: 12ch; text-wrap: balance; }
+.resume-section h2 { font-size: 4.75rem; }
 .resume-section__index { color: var(--color-muted); font-size: .75rem; font-weight: 700; letter-spacing: .08em; margin: var(--space-2) 0 0; }
 .reveal { animation-delay: var(--reveal-delay); animation-duration: var(--motion-slow); animation-fill-mode: both; }
 .reveal[data-revealed='true'] { animation-name: editorial-reveal; }
@@ -69,7 +69,14 @@ a { color: inherit; }
   .section-nav a { display: inline-block; min-block-size: 2rem; padding-block: .35rem; }
   .resume-section { min-block-size: 58vh; padding-block: 8rem 4rem; }
   .resume-section--hero { min-block-size: 100svh; }
+  .resume-section h1 { font-size: 3.5rem; }
+  .resume-section h2 { font-size: 2.5rem; }
   .editorial-grid { background-size: 100% 8rem, 8rem 100%; }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .resume-section h1 { font-size: 5.5rem; }
+  .resume-section h2 { font-size: 3.75rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

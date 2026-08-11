@@ -5,6 +5,7 @@ type ChromaticFlowFieldProps = {
 }
 
 const colors = ['#df493e', '#f2ca4f', '#3c9a70', '#3c73c2']
+const frameIntervalMs = 50
 
 export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -20,6 +21,7 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
     if (!context) return
 
     let animationFrame = 0
+    let drawTimer: number | undefined
     let visible = !document.hidden
     let width = 0
     let height = 0
@@ -27,13 +29,20 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
     const stop = () => {
       window.cancelAnimationFrame(animationFrame)
       animationFrame = 0
+      if (drawTimer !== undefined) window.clearTimeout(drawTimer)
+      drawTimer = undefined
     }
 
-    const start = () => {
-      if (visible && !animationFrame) animationFrame = window.requestAnimationFrame(draw)
+    const schedule = () => {
+      if (!visible || compactViewport.matches || animationFrame || drawTimer !== undefined) return
+      drawTimer = window.setTimeout(() => {
+        drawTimer = undefined
+        animationFrame = window.requestAnimationFrame(draw)
+      }, frameIntervalMs)
     }
 
     const resize = () => {
+      if (compactViewport.matches) return
       const ratio = Math.min(window.devicePixelRatio || 1, 2)
       width = window.innerWidth
       height = window.innerHeight
@@ -43,8 +52,8 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
     }
 
     const draw = (time: number) => {
+      animationFrame = 0
       if (!visible) {
-        animationFrame = 0
         return
       }
 
@@ -66,12 +75,12 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
         context.fillRect(0, 0, width, height)
       })
 
-      animationFrame = window.requestAnimationFrame(draw)
+      schedule()
     }
 
     const onVisibilityChange = () => {
       visible = !document.hidden
-      if (visible) start()
+      if (visible) schedule()
       else stop()
     }
 
@@ -81,14 +90,14 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
         return
       }
       resize()
-      start()
+      schedule()
     }
 
     resize()
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('resize', resize, { passive: true })
     compactViewport.addEventListener('change', onViewportChange)
-    start()
+    schedule()
 
     return () => {
       stop()
