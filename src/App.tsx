@@ -5,6 +5,7 @@ import { ScrollMotion } from './components/layout/ScrollMotion'
 import { SiteHeader } from './components/layout/SiteHeader'
 import { useActiveSection, type SectionLink } from './components/layout/SectionNav'
 import { ContactSection } from './components/sections/ContactSection'
+import { PrintableResume } from './components/print/PrintableResume'
 import { AdminPage } from './components/admin/AdminPage'
 import { EducationSection } from './components/sections/EducationSection'
 import { ExperienceSection } from './components/sections/ExperienceSection'
@@ -91,7 +92,8 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
   }, [repository])
 
   return (
-    <div className={reducedMotion ? 'resume-shell is-reduced-motion' : 'resume-shell'}>
+    <>
+      <div className={reducedMotion ? 'resume-shell is-reduced-motion' : 'resume-shell'}>
       <ChromaticFlowField reducedMotion={reducedMotion} />
       <EditorialGrid />
       <SiteHeader activeSection={activeSection} sections={publicSections} />
@@ -114,8 +116,10 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
           </section>
         ))}
       </main>
-      <ScrollMotion containerRef={contentRef} reducedMotion={reducedMotion} />
-    </div>
+        <ScrollMotion containerRef={contentRef} reducedMotion={reducedMotion} />
+      </div>
+      <PrintableResume projects={projects} resume={resume} />
+    </>
   )
 }
 

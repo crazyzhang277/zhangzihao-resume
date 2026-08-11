@@ -9,22 +9,23 @@ describe('complete resume sections', () => {
 
   it('renders every supplied resume fact and each visible GitHub project from local fallbacks', () => {
     render(<PublicResume reducedMotion />)
+    const screenResume = within(screen.getByRole('main', { name: 'Public resume' }))
 
-    expect(screen.getByRole('heading', { name: 'Zhang Zihao AIGC Resume' })).toBeVisible()
-    expect(screen.getByText(`${fallbackResume.profile.name} / ${fallbackResume.profile.englishName}`)).toBeVisible()
-    expect(screen.getByText(fallbackResume.profile.location, { exact: false })).toBeVisible()
-    expect(screen.getByText(`Born ${fallbackResume.profile.birth}`)).toBeVisible()
-    expect(screen.getByText(fallbackResume.profile.bio)).toBeVisible()
-    for (const role of fallbackResume.profile.targetRoles) expect(screen.getByText(role)).toBeVisible()
+    expect(screenResume.getByRole('heading', { name: 'Zhang Zihao AIGC Resume' })).toBeVisible()
+    expect(screenResume.getByText(`${fallbackResume.profile.name} / ${fallbackResume.profile.englishName}`)).toBeVisible()
+    expect(screenResume.getByText(fallbackResume.profile.location, { exact: false })).toBeVisible()
+    expect(screenResume.getByText(`Born ${fallbackResume.profile.birth}`)).toBeVisible()
+    expect(screenResume.getByText(fallbackResume.profile.bio)).toBeVisible()
+    for (const role of fallbackResume.profile.targetRoles) expect(screenResume.getByText(role)).toBeVisible()
 
     for (const metric of fallbackResume.impact) {
-      expect(screen.getAllByText(metric.number, { exact: false }).length).toBeGreaterThan(0)
-      expect(screen.getByText(metric.title)).toBeVisible()
-      expect(screen.getByText(metric.subtitle)).toBeVisible()
-      expect(screen.getByText(metric.description)).toBeVisible()
+      expect(screenResume.getAllByText(metric.number, { exact: false }).length).toBeGreaterThan(0)
+      expect(screenResume.getByText(metric.title)).toBeVisible()
+      expect(screenResume.getByText(metric.subtitle)).toBeVisible()
+      expect(screenResume.getByText(metric.description)).toBeVisible()
     }
     for (const experience of fallbackResume.experience) {
-      const entry = screen.getByText(experience.company).closest('article')!
+      const entry = screenResume.getByText(experience.company).closest('article')!
       expect(within(entry).getByText(experience.department, { exact: false })).toBeVisible()
       expect(within(entry).getByText(experience.role, { exact: false })).toBeVisible()
       expect(within(entry).getByText(experience.period, { exact: false })).toBeVisible()
@@ -35,11 +36,11 @@ describe('complete resume sections', () => {
       }
     }
     for (const step of fallbackResume.sop) {
-      expect(screen.getByText(step.title)).toBeVisible()
-      expect(screen.getByText(step.description)).toBeVisible()
+      expect(screenResume.getByText(step.title)).toBeVisible()
+      expect(screenResume.getByText(step.description)).toBeVisible()
     }
     for (const group of fallbackResume.skills) {
-      const tab = screen.getByRole('tab', { name: group.name })
+      const tab = screenResume.getByRole('tab', { name: group.name })
       fireEvent.click(tab)
       const panel = document.getElementById(tab.getAttribute('aria-controls')!)!
       for (const skill of group.skills) {
@@ -48,17 +49,17 @@ describe('complete resume sections', () => {
       }
     }
     for (const education of fallbackResume.education) {
-      expect(screen.getByText(education.school)).toBeVisible()
-      expect(screen.getByText(education.major, { exact: false })).toBeVisible()
-      for (const course of education.courses) expect(screen.getByText(course)).toBeVisible()
+      expect(screenResume.getByText(education.school)).toBeVisible()
+      expect(screenResume.getByText(education.major, { exact: false })).toBeVisible()
+      for (const course of education.courses) expect(screenResume.getByText(course)).toBeVisible()
     }
     for (const award of fallbackResume.awards) {
-      expect(screen.getByText(award.title)).toBeVisible()
-      expect(screen.getByText(award.level, { exact: false })).toBeVisible()
-      expect(screen.getByText(award.description)).toBeVisible()
+      expect(screenResume.getByText(award.title)).toBeVisible()
+      expect(screenResume.getByText(award.level, { exact: false })).toBeVisible()
+      expect(screenResume.getByText(award.description)).toBeVisible()
     }
     for (const project of fallbackProjects.filter((item) => item.visible)) {
-      const card = screen.getByRole('heading', { name: project.manualTitle ?? project.name }).closest('article')!
+      const card = screenResume.getByRole('heading', { name: project.manualTitle ?? project.name }).closest('article')!
       expect(within(card).getByText(project.language ?? 'Repository')).toBeVisible()
       const stars = within(card).getByText('Stars').closest('div')!
       const forks = within(card).getByText('Forks').closest('div')!
@@ -66,13 +67,13 @@ describe('complete resume sections', () => {
       expect(within(forks).getByText(String(project.forks))).toBeVisible()
     }
     for (const project of fallbackResume.projects) {
-      expect(screen.getByText(project.title)).toBeVisible()
-      expect(screen.getByText(project.role, { exact: false })).toBeVisible()
-      expect(screen.getByText(project.description)).toBeVisible()
-      expect(screen.getByText(project.highlights[0])).toBeVisible()
+      expect(screenResume.getByText(project.title)).toBeVisible()
+      expect(screenResume.getByText(project.role, { exact: false })).toBeVisible()
+      expect(screenResume.getByText(project.description)).toBeVisible()
+      expect(screenResume.getByText(project.highlights[0])).toBeVisible()
     }
-    expect(screen.getByRole('link', { name: new RegExp(fallbackResume.profile.email) })).toBeVisible()
-    expect(screen.getByRole('link', { name: new RegExp(fallbackResume.profile.phone) })).toBeVisible()
+    expect(screenResume.getByRole('link', { name: new RegExp(fallbackResume.profile.email) })).toBeVisible()
+    expect(screenResume.getByRole('link', { name: new RegExp(fallbackResume.profile.phone) })).toBeVisible()
   })
 
   it('expands project details through a keyboard-accessible control without rendering the excluded repository', () => {
