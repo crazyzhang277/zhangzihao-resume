@@ -81,11 +81,11 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
 
   useEffect(() => {
     let active = true
-    void Promise.all([repository.getResume(), repository.getProjects()]).then(([nextResume, nextProjects]) => {
+    void Promise.allSettled([repository.getResume(), repository.getProjects()]).then(([resumeResult, projectsResult]) => {
       if (!active) return
-      setResume(nextResume)
-      setProjects(nextProjects)
-    }).catch(() => undefined)
+      if (resumeResult.status === 'fulfilled') setResume(resumeResult.value)
+      if (projectsResult.status === 'fulfilled') setProjects(projectsResult.value)
+    })
     return () => { active = false }
   }, [repository])
 
