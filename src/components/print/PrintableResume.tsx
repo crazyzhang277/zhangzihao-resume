@@ -6,8 +6,11 @@ type PrintableResumeProps = {
   projects: Project[]
 }
 
+const printableProjectProofLimit = 4
+
 export function PrintableResume({ projects, resume }: PrintableResumeProps) {
   const visibleProjects = projects.filter((project) => project.visible && project.name.toLowerCase() !== excludedRepositorySlug)
+  const proofProjects = visibleProjects.slice(0, printableProjectProofLimit)
 
   return (
     <section aria-label="Printable A4 resume" className="printable-resume" data-page-count={resume.print.pageCount} data-page-size={resume.print.pageSize} data-testid="printable-resume" style={{ height: '297mm', width: '210mm' }}>
@@ -54,9 +57,9 @@ export function PrintableResume({ projects, resume }: PrintableResumeProps) {
       </section>
 
       <section className="printable-resume__section printable-resume__github" aria-labelledby="print-github-heading">
-        <h2 id="print-github-heading">GitHub proof</h2>
+        <h2 id="print-github-heading">GitHub proof (top {printableProjectProofLimit})</h2>
         <ul>
-          {visibleProjects.map((project) => <li key={project.githubId}><a href={project.htmlUrl}>{project.manualTitle ?? project.name}</a><span>{project.language ?? 'Repository'} | {project.stars} stars | {project.forks} forks</span></li>)}
+          {proofProjects.map((project) => <li key={project.githubId}><a href={project.htmlUrl}>{project.manualTitle ?? project.name}</a><span>{project.language ?? 'Repository'} | {project.stars} stars | {project.forks} forks</span></li>)}
         </ul>
       </section>
     </section>
