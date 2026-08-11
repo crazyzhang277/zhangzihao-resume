@@ -1,11 +1,21 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { Reveal } from './components/layout/Reveal'
 import { ScrollMotion } from './components/layout/ScrollMotion'
 import { SiteHeader } from './components/layout/SiteHeader'
 import { useActiveSection, type SectionLink } from './components/layout/SectionNav'
+import { ContactSection } from './components/sections/ContactSection'
+import { EducationSection } from './components/sections/EducationSection'
+import { ExperienceSection } from './components/sections/ExperienceSection'
+import { HeroSection } from './components/sections/HeroSection'
+import { ImpactSection } from './components/sections/ImpactSection'
+import { ProjectsSection } from './components/sections/ProjectsSection'
+import { SkillsSection } from './components/sections/SkillsSection'
 import { ChromaticFlowField } from './components/visual/ChromaticFlowField'
 import { EditorialGrid } from './components/visual/EditorialGrid'
+import { fallbackProjects, fallbackResume } from './data/profile'
+import { createContentRepository } from './lib/contentRepository'
+import type { ContentRepository, Project, ResumeContent } from './types/content'
 
 const publicSections: SectionLink[] = [
   { id: 'hero', label: 'Profile' },
@@ -38,15 +48,46 @@ function useReducedMotion() {
   return reducedMotion
 }
 
-export function PublicResume({ reducedMotion: reducedMotionOverride }: { reducedMotion?: boolean }) {
+type PublicResumeProps = {
+  reducedMotion?: boolean
+  repository?: ContentRepository
+}
+
+type SectionRenderer = (resume: ResumeContent, projects: Project[]) => ReactNode
+
+const sectionContent: Record<SectionLink['id'], SectionRenderer> = {
+  hero: (resume: ResumeContent) => <HeroSection profile={resume.profile} />,
+  impact: (resume: ResumeContent) => <ImpactSection metrics={resume.impact} />,
+  experience: (resume: ResumeContent) => <ExperienceSection experience={resume.experience} sop={resume.sop} />,
+  projects: (resume: ResumeContent, projects: Project[]) => <ProjectsSection portfolio={resume.projects} projects={projects} />,
+  skills: (resume: ResumeContent) => <SkillsSection groups={resume.skills} />,
+  education: (resume: ResumeContent) => <EducationSection awards={resume.awards} education={resume.education} />,
+  contact: (resume: ResumeContent) => <ContactSection profile={resume.profile} />,
+}
+
+const defaultRepository = createContentRepository()
+
+export function PublicResume({ reducedMotion: reducedMotionOverride, repository = defaultRepository }: PublicResumeProps) {
   const preferredReducedMotion = useReducedMotion()
   const reducedMotion = reducedMotionOverride ?? preferredReducedMotion
   const activeSection = useActiveSection(publicSectionIds)
   const contentRef = useRef<HTMLElement>(null)
+  const [resume, setResume] = useState(fallbackResume)
+  const [projects, setProjects] = useState(fallbackProjects)
   const activeSectionIndex = Math.max(0, publicSectionIds.indexOf(activeSection))
   const activeSectionNumber = activeSectionIndex + 1
   const activeSectionLabel = publicSections[activeSectionIndex]?.label ?? publicSections[0].label
   const progressStyle = { '--section-progress': activeSectionNumber / publicSections.length } as CSSProperties
+
+  useEffect(() => {
+    let active = true
+    void Promise.all([repository.getResume(), repository.getProjects()]).then(([nextResume, nextProjects]) => {
+      if (!active) return
+      setResume(nextResume)
+      setProjects(nextProjects)
+    }).catch(() => undefined)
+    return () => { active = false }
+  }, [repository])
 
   return (
     <div className={reducedMotion ? 'resume-shell is-reduced-motion' : 'resume-shell'}>
@@ -67,8 +108,7 @@ export function PublicResume({ reducedMotion: reducedMotionOverride }: { reduced
         {publicSections.map((section, index) => (
           <section aria-labelledby={`${section.id}-heading`} className={`resume-section resume-section--${section.id}`} id={section.id} key={section.id}>
             <Reveal delayMs={Math.min(index * 50, 180)}>
-              {section.id === 'hero' ? <h1 id="hero-heading">Zhang Zihao AIGC Resume</h1> : <h2 id={`${section.id}-heading`}>{section.label}</h2>}
-              <p className="resume-section__index">{String(index + 1).padStart(2, '0')}</p>
+              {section.id === 'hero' ? sectionContent.hero(resume, projects) : <><h2 id={`${section.id}-heading`}>{section.label}</h2><p className="resume-section__index">{String(index + 1).padStart(2, '0')}</p>{sectionContent[section.id](resume, projects)}</>}
             </Reveal>
           </section>
         ))}
