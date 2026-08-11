@@ -88,4 +88,49 @@ describe('ContentRepository', () => {
     await expect(repository.getResume()).resolves.toEqual(fallbackResume)
     await expect(repository.getProjects()).resolves.toEqual(fallbackProjects)
   })
+
+  it('excludes forked, archived, and permanently excluded remote projects', async () => {
+    const repository = createContentRepository(remoteClient({ content: fallbackResume }, [
+      projectRecord({ github_id: 1, name: 'kept-project' }),
+      projectRecord({ github_id: 2, name: 'forked-project', fork: true }),
+      projectRecord({ github_id: 3, name: 'archived-project', archived: true }),
+      projectRecord({ github_id: 4, name: 'zeroaigen-auto-mention' }),
+    ]) as never)
+
+    await expect(repository.getProjects()).resolves.toMatchObject([
+      { githubId: 1, name: 'kept-project' },
+    ])
+  })
+
+  it('returns local content when a remote resume omits required field values', async () => {
+    const malformedResume = {
+      ...fallbackResume,
+      profile: { ...fallbackResume.profile, phone: 17302787402 },
+      impact: [{ number: '40%' }],
+    }
+    const repository = createContentRepository(remoteClient({ content: malformedResume }, []) as never)
+
+    await expect(repository.getResume()).resolves.toEqual(fallbackResume)
+  })
 })
+
+function projectRecord(overrides: Record<string, unknown>) {
+  return {
+    github_id: 0,
+    name: 'project',
+    description: 'Remote project',
+    html_url: 'https://github.com/crazyzhang277/project',
+    language: 'TypeScript',
+    topics: ['resume'],
+    stars: 0,
+    forks: 0,
+    updated_at: '2026-08-01T00:00:00.000Z',
+    visible: true,
+    featured_rank: null,
+    manual_title: null,
+    manual_description: null,
+    fork: false,
+    archived: false,
+    ...overrides,
+  }
+}

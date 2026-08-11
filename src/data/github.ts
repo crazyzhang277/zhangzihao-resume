@@ -60,7 +60,7 @@ export function mapProjectRecord(record: Record<string, unknown>): Project | nul
   const name = stringValue(record.name)
   const htmlUrl = stringValue(record.html_url ?? record.htmlUrl)
   const updatedAt = stringValue(record.updated_at ?? record.updatedAt)
-  if (githubId === null || name === null || htmlUrl === null || updatedAt === null || name.toLowerCase() === excludedRepositorySlug) return null
+  if (githubId === null || name === null || htmlUrl === null || updatedAt === null || booleanValue(record.fork) === true || booleanValue(record.archived) === true || name.toLowerCase() === excludedRepositorySlug) return null
 
   return {
     githubId,
