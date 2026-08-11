@@ -82,6 +82,38 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
   const progressStyle = { '--section-progress': activeSectionNumber / publicSections.length } as CSSProperties
 
   useEffect(() => {
+    if (reducedMotion) return
+
+    const root = document.documentElement
+    let frame = 0
+    let pointerX = window.innerWidth * 0.5
+    let pointerY = window.innerHeight * 0.35
+
+    const paintPointer = () => {
+      frame = 0
+      root.style.setProperty('--pointer-x', `${pointerX}px`)
+      root.style.setProperty('--pointer-y', `${pointerY}px`)
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      pointerX = event.clientX
+      pointerY = event.clientY
+      if (!frame) frame = window.requestAnimationFrame(paintPointer)
+    }
+
+    root.style.setProperty('--pointer-x', `${pointerX}px`)
+    root.style.setProperty('--pointer-y', `${pointerY}px`)
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      if (frame) window.cancelAnimationFrame(frame)
+      root.style.removeProperty('--pointer-x')
+      root.style.removeProperty('--pointer-y')
+    }
+  }, [reducedMotion])
+
+  useEffect(() => {
     let active = true
     void Promise.allSettled([repository.getResume(), repository.getProjects()]).then(([resumeResult, projectsResult]) => {
       if (!active) return

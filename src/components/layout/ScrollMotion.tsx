@@ -34,6 +34,17 @@ export function ScrollMotion({ containerRef, reducedMotion }: ScrollMotionProps)
             scrollTrigger: { end: 'bottom top', scrub: 0.3, start: 'top bottom' },
           })
         }
+
+        Array.from(container.querySelectorAll<HTMLElement>('.resume-section')).forEach((section, index) => {
+          const reveal = section.querySelector<HTMLElement>('.reveal')
+          if (!reveal) return
+          gsap.to(reveal, {
+            ease: 'none',
+            rotate: index % 2 === 0 ? -0.18 : 0.18,
+            yPercent: index % 2 === 0 ? -1.5 : 1.5,
+            scrollTrigger: { end: 'bottom 18%', scrub: 0.65, start: 'top 88%', trigger: section },
+          })
+        })
       }, container)
 
       return () => context.revert()

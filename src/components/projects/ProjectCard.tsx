@@ -1,4 +1,5 @@
 import { ChevronDown, ExternalLink, GitFork, Star } from 'lucide-react'
+import { useRef, type PointerEvent } from 'react'
 
 import type { Project } from '../../types/content'
 import { ProjectDetails } from './ProjectDetails'
@@ -10,11 +11,30 @@ export type ProjectCardProps = {
 }
 
 export function ProjectCard({ project, expanded, onToggle }: ProjectCardProps) {
+  const cardRef = useRef<HTMLElement>(null)
   const title = project.manualTitle ?? project.name
   const updatedDate = new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(new Date(project.updatedAt))
 
+  function handlePointerMove(event: PointerEvent<HTMLElement>) {
+    const card = cardRef.current
+    if (!card || event.pointerType === 'touch') return
+    const bounds = card.getBoundingClientRect()
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5
+    card.style.setProperty('--card-rotate-x', `${y * -2.8}deg`)
+    card.style.setProperty('--card-rotate-y', `${x * 2.8}deg`)
+    card.style.setProperty('--card-glow-x', `${(x + 0.5) * 100}%`)
+    card.style.setProperty('--card-glow-y', `${(y + 0.5) * 100}%`)
+  }
+
+  function resetPointer() {
+    const card = cardRef.current
+    card?.style.removeProperty('--card-rotate-x')
+    card?.style.removeProperty('--card-rotate-y')
+  }
+
   return (
-    <article className="project-card">
+    <article className="project-card" onPointerLeave={resetPointer} onPointerMove={handlePointerMove} ref={cardRef}>
       <div className="project-card__topline"><span>{project.language ?? 'Repository'}</span><time dateTime={project.updatedAt}>Updated {updatedDate}</time></div>
       <h3>{title}</h3>
       {project.topics.length > 0 ? <ul aria-label={`${title} topics`} className="tag-list">{project.topics.map((topic) => <li key={topic}>{topic}</li>)}</ul> : null}

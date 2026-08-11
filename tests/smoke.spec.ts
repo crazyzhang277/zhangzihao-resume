@@ -22,6 +22,18 @@ test.describe('public resume smoke flow', () => {
     expect(consoleErrors).toEqual([])
   })
 
+  test('keeps the chromatic background visibly animating', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/')
+
+    await expect(page.getByTestId('chromatic-flow-field')).toHaveAttribute('data-motion-state', 'running')
+    const before = await page.screenshot({ animations: 'allow' })
+    await page.waitForTimeout(650)
+    const after = await page.screenshot({ animations: 'allow' })
+
+    expect(Buffer.compare(before, after)).not.toBe(0)
+  })
+
   test('mobile navigation and contact actions remain available without scroll locking', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto('/')
