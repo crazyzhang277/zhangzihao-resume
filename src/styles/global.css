@@ -127,6 +127,33 @@ a { color: inherit; }
 .reveal[data-revealed='true'] { animation-name: editorial-reveal; }
 @keyframes editorial-reveal { from { transform: translateY(1rem); } to { transform: translateY(0); } }
 
+.admin-page { margin: 0 auto; max-inline-size: 76rem; padding: 3rem var(--page-gutter) 6rem; }
+.admin-page--state { max-inline-size: 48rem; padding-block-start: 18vh; }
+.admin-page h1 { font-size: 3rem; line-height: 1; margin: 0; }
+.admin-page h2 { font-size: 1.25rem; margin: 0; }
+.admin-page__header { border-block-end: 1px solid var(--color-rule); margin-block-end: var(--space-3); padding-block-end: var(--space-2); }
+.admin-page__header > p:last-child, .admin-content-form header p, .admin-projects header p, .admin-sync p { color: var(--color-muted); line-height: 1.55; }
+.admin-sync, .admin-content-form, .admin-projects { border-block-end: 1px solid var(--color-rule); display: grid; gap: var(--space-2); padding-block: var(--space-3); }
+.admin-sync { align-items: start; grid-template-columns: minmax(0, 1fr) auto; }
+.admin-sync__result { border-inline-start: 3px solid var(--color-green); grid-column: 1 / -1; padding-inline-start: var(--space-1); }
+.admin-sync__result--error, .admin-feedback--error { border-color: var(--color-red); color: #a1231b; }
+.admin-sync__result p { margin: .2rem 0; }
+.admin-content-form fieldset, .admin-project { border: 1px solid var(--color-rule); display: grid; gap: var(--space-1); margin: 0; padding: var(--space-2); }
+.admin-content-form legend, .admin-project legend { font-weight: 800; padding-inline: .25rem; }
+.admin-field-grid, .admin-project__controls { display: grid; gap: var(--space-1); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-content-form label, .admin-project label, .admin-structured-sections > label { display: grid; font-size: .84rem; font-weight: 750; gap: .35rem; }
+.admin-content-form input, .admin-content-form textarea, .admin-project input, .admin-project textarea { background: rgb(255 255 255 / 66%); border: 1px solid var(--color-rule); border-radius: 0; color: var(--color-ink); font: inherit; min-block-size: 2.4rem; padding: .5rem; }
+.admin-content-form textarea, .admin-project textarea { resize: vertical; }
+.admin-structured-sections, .admin-project-list { display: grid; gap: var(--space-2); }
+.admin-structured-sections > label > span { color: var(--color-muted); font-size: .75rem; font-weight: 500; }
+.admin-exclusion { background: rgb(239 200 77 / 18%); border-inline-start: 3px solid var(--color-yellow); font-size: .85rem; padding: var(--space-1); }
+.admin-project > p { color: var(--color-muted); font-size: .8rem; margin: 0; overflow-wrap: anywhere; }
+.admin-project label:has(input[type='checkbox']) { align-items: center; display: flex; grid-column: 1 / -1; }
+.admin-project label input[type='checkbox'] { min-block-size: auto; }
+.admin-button { background: var(--color-ink); border: 1px solid var(--color-ink); border-radius: 0; color: var(--color-paper); cursor: pointer; font-weight: 750; justify-self: start; min-block-size: 2.55rem; padding: .5rem .75rem; }
+.admin-button:disabled { cursor: wait; opacity: .65; }
+.admin-feedback { border-inline-start: 3px solid var(--color-green); font-size: .85rem; font-weight: 700; margin: 0; padding-inline-start: var(--space-1); }
+
 @media (max-width: 767px) {
   .chromatic-flow__canvas { display: none; }
   .site-header { background: rgb(247 247 242 / 92%); border-block-end: 1px solid var(--color-rule); backdrop-filter: blur(10px); }
@@ -139,6 +166,10 @@ a { color: inherit; }
   .resume-section--hero { min-block-size: 100svh; }
   .resume-section h1 { font-size: 3.5rem; }
   .resume-section h2 { font-size: 2.5rem; }
+  .admin-page { padding-block-start: 2rem; }
+  .admin-page h1 { font-size: 2.25rem; }
+  .admin-sync, .admin-field-grid, .admin-project__controls { grid-template-columns: 1fr; }
+  .admin-sync__result { grid-column: auto; }
   .impact-grid, .project-grid, .portfolio-grid, .experience-layout, .education-layout, .skill-panel ul { grid-template-columns: 1fr; }
   .experience-layout { gap: var(--space-3); }
   .project-card__topline { align-items: flex-start; flex-direction: column; }

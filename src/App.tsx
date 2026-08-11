@@ -5,6 +5,7 @@ import { ScrollMotion } from './components/layout/ScrollMotion'
 import { SiteHeader } from './components/layout/SiteHeader'
 import { useActiveSection, type SectionLink } from './components/layout/SectionNav'
 import { ContactSection } from './components/sections/ContactSection'
+import { AdminPage } from './components/admin/AdminPage'
 import { EducationSection } from './components/sections/EducationSection'
 import { ExperienceSection } from './components/sections/ExperienceSection'
 import { HeroSection } from './components/sections/HeroSection'
@@ -118,14 +119,6 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
   )
 }
 
-function AdminSurface() {
-  return (
-    <main aria-label="Resume administration">
-      <h1>Resume administration</h1>
-    </main>
-  )
-}
-
 export function App() {
-  return window.location.pathname.startsWith('/admin') ? <AdminSurface /> : <PublicResume />
+  return window.location.pathname.startsWith('/admin') ? <AdminPage /> : <PublicResume />
 }

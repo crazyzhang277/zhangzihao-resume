@@ -13,11 +13,12 @@ describe('App', () => {
     expect(document.querySelectorAll('main section')).toHaveLength(7)
   })
 
-  it('renders a separate admin surface under the admin path', () => {
+  it('renders an unconfigured admin state under the admin path', () => {
     window.history.replaceState({}, '', '/admin')
 
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: 'Resume administration' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Admin is unavailable' })).toBeVisible()
+    expect(screen.getByText(/supabase browser configuration is required/i)).toBeVisible()
   })
 })
