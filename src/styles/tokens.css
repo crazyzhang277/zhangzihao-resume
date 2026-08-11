@@ -1,0 +1,16 @@
+:root {
+  --color-paper: #f8f5ef;
+  --color-ink: #1f2933;
+  --color-red: #d84a3a;
+  --color-yellow: #f2c94c;
+  --color-green: #3b9c6d;
+  --color-blue: #3f75c5;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+  --motion-fast: 120ms;
+  --motion-medium: 240ms;
+  --motion-slow: 480ms;
+  --content-width: 72rem;
+}
