@@ -36,6 +36,67 @@ export type SyncRunResult = {
   error: string | null
 }
 
+type GitHubResponse = {
+  ok: boolean
+  status: number
+  json: () => Promise<unknown>
+  headers: { get: (name: string) => string | null }
+}
+
+export type GitHubRepositoryFetchResult =
+  | {
+    ok: true
+    repositories: GitHubRepository[]
+    fetched: number
+    filtered: number
+    error: null
+  }
+  | {
+    ok: false
+    repositories: null
+    fetched: number
+    filtered: number
+    error: Error
+  }
+
+export async function fetchGitHubRepositories(
+  initialUrl: string,
+  fetchPage: (url: string) => Promise<GitHubResponse>,
+  shouldInclude: (repository: GitHubRepository) => boolean,
+): Promise<GitHubRepositoryFetchResult> {
+  const repositories: GitHubRepository[] = []
+  let fetched = 0
+  let filtered = 0
+  let url: string | null = initialUrl
+
+  try {
+    while (url) {
+      const response = await fetchPage(url)
+      if (!response.ok) throw new Error(`GitHub repository fetch failed with ${response.status}`)
+
+      const page = await response.json()
+      if (!Array.isArray(page)) throw new Error('GitHub repository response was not an array')
+
+      const pageRepositories = page as GitHubRepository[]
+      const includedRepositories = pageRepositories.filter(shouldInclude)
+      fetched += pageRepositories.length
+      filtered += pageRepositories.length - includedRepositories.length
+      repositories.push(...includedRepositories)
+      url = nextPageUrl(response.headers.get('link'))
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      repositories: null,
+      fetched,
+      filtered,
+      error: error instanceof Error ? error : new Error('Unknown GitHub repository fetch failure'),
+    }
+  }
+
+  return { ok: true, repositories, fetched, filtered, error: null }
+}
+
 export function shouldSyncRepository(repository: GitHubRepository, exclusions: Set<number | string>): boolean {
   const slug = repository.name.toLowerCase()
   return !repository.fork
@@ -58,4 +119,10 @@ export function mapRepository(repository: GitHubRepository): ProjectInsert {
     updatedAt: repository.updated_at,
     source: 'github',
   }
+}
+
+function nextPageUrl(linkHeader: string | null): string | null {
+  if (!linkHeader) return null
+  const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
+  return match?.[1] ?? null
 }

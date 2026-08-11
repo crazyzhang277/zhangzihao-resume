@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { mapRepository, shouldSyncRepository, type GitHubRepository } from '../supabase/functions/_shared/github'
+import {
+  fetchGitHubRepositories,
+  mapRepository,
+  shouldSyncRepository,
+  type GitHubRepository,
+} from '../supabase/functions/_shared/github'
 
 describe('GitHub sync helpers', () => {
   it('rejects forks, archived repositories, the permanent slug, and configured IDs', () => {
@@ -38,7 +43,43 @@ describe('GitHub sync helpers', () => {
       source: 'github',
     })
   })
+
+  it('retains partial pagination counts without repositories after a later page fails', async () => {
+    const firstPageUrl = 'https://api.github.test/repos?page=1'
+    const secondPageUrl = 'https://api.github.test/repos?page=2'
+    const requestedUrls: string[] = []
+
+    const result = await fetchGitHubRepositories(
+      firstPageUrl,
+      async (url) => {
+        requestedUrls.push(url)
+        if (url === secondPageUrl) return githubResponse(502, [])
+        return githubResponse(200, [
+          repository({ id: 1, name: 'kept-project' }),
+          repository({ id: 2, name: 'forked-project', fork: true }),
+        ], `<${secondPageUrl}>; rel="next"`)
+      },
+      (candidate) => shouldSyncRepository(candidate, new Set()),
+    )
+
+    expect(requestedUrls).toEqual([firstPageUrl, secondPageUrl])
+    expect(result).toMatchObject({
+      repositories: null,
+      fetched: 2,
+      filtered: 1,
+    })
+    expect(result.error?.message).toBe('GitHub repository fetch failed with 502')
+  })
 })
+
+function githubResponse(status: number, body: unknown, link: string | null = null) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+    headers: { get: (name: string) => name.toLowerCase() === 'link' ? link : null },
+  }
+}
 
 function repository(overrides: Partial<GitHubRepository>): GitHubRepository {
   return {

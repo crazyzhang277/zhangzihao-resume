@@ -1,9 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 import {
+  fetchGitHubRepositories,
   mapRepository,
   shouldSyncRepository,
-  type GitHubRepository,
   type SyncRunResult,
 } from '../_shared/github.ts'
 
@@ -43,8 +43,6 @@ async function syncGitHubProjects(supabase: ReturnType<typeof createClient>, git
   let result: SyncRunResult
 
   try {
-    const repositories = await fetchRepositories(githubToken)
-    fetched = repositories.length
     const { data: exclusionRows, error: exclusionsError } = await supabase
       .from('project_exclusions')
       .select('github_id, repository_slug')
@@ -56,10 +54,24 @@ async function syncGitHubProjects(supabase: ReturnType<typeof createClient>, git
       if (typeof row.repository_slug === 'string') exclusions.add(row.repository_slug.toLowerCase())
     }
 
-    const projects = repositories.filter((repository) => shouldSyncRepository(repository, exclusions))
-    filtered = repositories.length - projects.length
+    const repositoryResult = await fetchGitHubRepositories(
+      `https://api.github.com/users/${githubAccount}/repos?per_page=${githubPageSize}&page=1&type=owner&sort=updated`,
+      (url) => fetch(url, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${githubToken}`,
+          'User-Agent': 'aigc-resume-github-sync',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }),
+      (repository) => shouldSyncRepository(repository, exclusions),
+    )
+    fetched = repositoryResult.fetched
+    filtered = repositoryResult.filtered
+    if (!repositoryResult.ok) throw repositoryResult.error
+
     const now = new Date().toISOString()
-    const projectRows = projects.map((repository) => {
+    const projectRows = repositoryResult.repositories.map((repository) => {
       const project = mapRepository(repository)
       return {
         github_id: project.githubId,
@@ -117,36 +129,6 @@ async function syncGitHubProjects(supabase: ReturnType<typeof createClient>, git
   if (logError) return { ...result, status: 'error', error: `Sync log write failed: ${logError.message}` }
 
   return result
-}
-
-async function fetchRepositories(githubToken: string): Promise<GitHubRepository[]> {
-  const repositories: GitHubRepository[] = []
-  let url: string | null = `https://api.github.com/users/${githubAccount}/repos?per_page=${githubPageSize}&page=1&type=owner&sort=updated`
-
-  while (url) {
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${githubToken}`,
-        'User-Agent': 'aigc-resume-github-sync',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    })
-    if (!response.ok) throw new Error(`GitHub repository fetch failed with ${response.status}`)
-
-    const page = await response.json()
-    if (!Array.isArray(page)) throw new Error('GitHub repository response was not an array')
-    repositories.push(...page as GitHubRepository[])
-    url = nextPageUrl(response.headers.get('link'))
-  }
-
-  return repositories
-}
-
-function nextPageUrl(linkHeader: string | null): string | null {
-  if (!linkHeader) return null
-  const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
-  return match?.[1] ?? null
 }
 
 async function isAuthorized(request: Request, supabase: ReturnType<typeof createClient>, serviceRoleKey: string): Promise<boolean> {
