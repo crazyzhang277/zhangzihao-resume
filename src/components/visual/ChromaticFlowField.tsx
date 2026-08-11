@@ -15,8 +15,6 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
     if (!canvas || reducedMotion || typeof window.matchMedia !== 'function') return
 
     const compactViewport = window.matchMedia('(max-width: 767px)')
-    if (compactViewport.matches) return
-
     const context = canvas.getContext('2d')
     if (!context) return
 
@@ -93,11 +91,13 @@ export function ChromaticFlowField({ reducedMotion }: ChromaticFlowFieldProps) {
       schedule()
     }
 
-    resize()
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('resize', resize, { passive: true })
     compactViewport.addEventListener('change', onViewportChange)
-    schedule()
+    if (!compactViewport.matches) {
+      resize()
+      schedule()
+    }
 
     return () => {
       stop()
