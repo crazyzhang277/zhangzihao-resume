@@ -31,7 +31,7 @@ export function useActiveSection(sectionIds: string[]): string {
 
     sections.forEach((section) => observer.observe(section))
     return () => observer.disconnect()
-  }, [sectionIds])
+  }, [sectionIds.join(',')])
 
   return activeSection
 }
