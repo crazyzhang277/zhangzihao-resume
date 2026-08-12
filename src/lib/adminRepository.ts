@@ -23,6 +23,8 @@ export type AdminSession = {
 export interface AdminRepository {
   isConfigured: boolean
   getSession(): Promise<AdminSession | null>
+  signIn(email: string, password: string): Promise<void>
+  signOut(): Promise<void>
   subscribeToAuthStateChange(subscriber: (session: AdminSession | null) => void): () => void
   getResume(): Promise<ResumeContent>
   getProjects(): Promise<Project[]>
@@ -44,6 +46,16 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
       const { data, error } = await configuredClient.auth.getSession()
       if (error) throw error
       return mapAdminSession(data.session)
+    },
+    async signIn(email, password) {
+      const configuredClient = requireClient(client)
+      const { error } = await configuredClient.auth.signInWithPassword({ email, password })
+      if (error) throw error
+    },
+    async signOut() {
+      const configuredClient = requireClient(client)
+      const { error } = await configuredClient.auth.signOut()
+      if (error) throw error
     },
     subscribeToAuthStateChange(subscriber) {
       const configuredClient = requireClient(client)
@@ -117,14 +129,95 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
     },
     async triggerGitHubSync() {
       const configuredClient = requireClient(client)
-      const { data, error } = await configuredClient.functions.invoke<SyncRunResult>('sync-github-projects', { method: 'POST' })
-      if (isSyncResult(data)) return data
-      const errorPayload = await readFunctionErrorPayload(error)
-      if (isSyncResult(errorPayload)) return errorPayload
-      if (typeof errorPayload?.error === 'string') throw new Error(errorPayload.error)
-      if (error) throw error
-      throw new Error('The sync service returned an invalid response.')
+      try {
+        const { data, error } = await configuredClient.functions.invoke<SyncRunResult>('sync-github-projects', { method: 'POST' })
+        if (isSyncResult(data)) return data
+        const errorPayload = await readFunctionErrorPayload(error)
+        if (isSyncResult(errorPayload)) return errorPayload
+      } catch {
+        // Fallback to client-side sync if Edge Function is unavailable
+      }
+      return await runClientSideGitHubSync(configuredClient)
     },
+  }
+}
+
+async function runClientSideGitHubSync(supabase: SupabaseClient): Promise<SyncRunResult> {
+  const githubAccount = 'crazyzhang277'
+  const startedAt = new Date().toISOString()
+  let fetched = 0
+  let written = 0
+  let filtered = 0
+
+  try {
+    const { data: exclusionRows } = await supabase.from('project_exclusions').select('github_id, repository_slug')
+    const exclusions = new Set<number | string>()
+    for (const row of exclusionRows ?? []) {
+      if (typeof row.github_id === 'number') exclusions.add(row.github_id)
+      if (typeof row.repository_slug === 'string') exclusions.add(row.repository_slug.toLowerCase())
+    }
+
+    const res = await fetch(`https://api.github.com/users/${githubAccount}/repos?per_page=100&type=owner&sort=updated`)
+    if (!res.ok) throw new Error(`GitHub API fetch failed with status ${res.status}`)
+
+    const repos: unknown = await res.json()
+    if (!Array.isArray(repos)) throw new Error('GitHub API returned invalid data format.')
+
+    fetched = repos.length
+    const validRepos = repos.filter((r: Record<string, unknown>) => {
+      const slug = typeof r.name === 'string' ? r.name.toLowerCase() : ''
+      const id = typeof r.id === 'number' ? r.id : 0
+      return !r.fork && !r.archived && slug !== 'zeroaigen-auto-mention' && !exclusions.has(id) && !exclusions.has(slug)
+    })
+    filtered = fetched - validRepos.length
+
+    const now = new Date().toISOString()
+    const projectRows = validRepos.map((r: Record<string, unknown>) => ({
+      github_id: r.id,
+      name: r.name,
+      description: typeof r.description === 'string' ? r.description : '',
+      html_url: r.html_url,
+      language: r.language ?? null,
+      topics: Array.isArray(r.topics) ? r.topics : [],
+      stars: typeof r.stargazers_count === 'number' ? r.stargazers_count : 0,
+      forks: typeof r.forks_count === 'number' ? r.forks_count : 0,
+      updated_at: r.updated_at,
+      source: 'github',
+      fork: Boolean(r.fork),
+      archived: Boolean(r.archived),
+      stale: false,
+      last_synced_at: now,
+      record_updated_at: now,
+    }))
+
+    const { error: syncError } = await supabase.from('projects').upsert(projectRows, { onConflict: 'github_id' })
+    if (syncError) throw syncError
+    written = projectRows.length
+
+    const result: SyncRunResult = { status: 'success', fetched, written, filtered, error: null }
+    await supabase.from('sync_runs').insert({
+      started_at: startedAt,
+      finished_at: new Date().toISOString(),
+      status: 'success',
+      fetched,
+      written,
+      filtered,
+      error: null,
+    })
+    return result
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Sync request failed.'
+    const result: SyncRunResult = { status: 'error', fetched, written, filtered, error: errorMsg }
+    await supabase.from('sync_runs').insert({
+      started_at: startedAt,
+      finished_at: new Date().toISOString(),
+      status: 'error',
+      fetched,
+      written,
+      filtered,
+      error: errorMsg,
+    })
+    return result
   }
 }
 

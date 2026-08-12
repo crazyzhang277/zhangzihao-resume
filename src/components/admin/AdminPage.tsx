@@ -104,14 +104,23 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
 
   if (pageState === 'loading') return <main className="admin-page" aria-busy="true"><p>Checking administrator access...</p></main>
   if (pageState === 'unconfigured') return <StatePage heading="Admin is unavailable" message="Supabase browser configuration is required before administration can be used." />
-  if (pageState === 'unauthenticated') return <StatePage heading="Sign in required" message="Sign in through Supabase with an owner account to manage resume content." />
-  if (pageState === 'forbidden') return <StatePage heading="Owner access required" message="This account does not have the owner claim required by the content policy." />
+  if (pageState === 'unauthenticated') return <AdminLoginForm onSignIn={repository.signIn} />
+  if (pageState === 'forbidden') return <AdminLoginForm forbidden onSignIn={repository.signIn} />
   if (pageState === 'error') return <StatePage heading="Unable to load administration" message={loadError ?? 'The owner data could not be loaded.'} />
   if (!resume) return null
 
   return (
     <main aria-label="Resume administration" className="admin-page">
-      <header className="admin-page__header"><p className="eyebrow">Owner workspace</p><h1>Resume administration</h1><p>Changes are authorized by Supabase Row Level Security.</p></header>
+      <header className="admin-page__header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p className="eyebrow">Owner workspace</p>
+            <h1>Resume administration</h1>
+            <p>Changes are authorized by Supabase Row Level Security.</p>
+          </div>
+          <button className="icon-text-button" onClick={() => void repository.signOut()} type="button">Sign out</button>
+        </div>
+      </header>
       <section className="admin-sync" aria-labelledby="admin-sync-heading">
         <div><h2 id="admin-sync-heading">GitHub synchronization</h2><p>{latestSync ? `Last completed: ${new Date(latestSync.finishedAt).toLocaleString()}` : 'No completed sync run has been recorded.'}</p></div>
         <button className="admin-button" disabled={isSyncing} onClick={() => void runSync()} type="button">{isSyncing ? 'Syncing GitHub...' : 'Run GitHub sync'}</button>
@@ -119,6 +128,45 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
       </section>
       <AdminContentForm content={resume} onSave={saveResume} />
       <AdminProjects onSaveSettings={repository.saveProjectSettings} projects={projects} />
+    </main>
+  )
+}
+
+function AdminLoginForm({ onSignIn, forbidden }: { onSignIn: (email: string, pass: string) => Promise<void>; forbidden?: boolean }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      await onSignIn(email, password)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Sign in failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <main aria-label="Resume administration" className="admin-page admin-page--state">
+      <h1>{forbidden ? 'Owner access required' : 'Sign in required'}</h1>
+      <p>{forbidden ? 'This account does not have the owner claim required by the content policy.' : 'Sign in through Supabase with an owner account to manage resume content.'}</p>
+      <form className="admin-content-form" onSubmit={(e) => void handleSubmit(e)} style={{ border: 'none', padding: 0 }}>
+        <label>
+          Email address
+          <input onChange={(e) => setEmail(e.target.value)} required type="email" value={email} />
+        </label>
+        <label>
+          Password
+          <input onChange={(e) => setPassword(e.target.value)} required type="password" value={password} />
+        </label>
+        {error ? <p className="admin-feedback admin-feedback--error" role="alert">{error}</p> : null}
+        <button className="admin-button" disabled={loading} type="submit">{loading ? 'Signing in...' : 'Sign In as Owner'}</button>
+      </form>
     </main>
   )
 }

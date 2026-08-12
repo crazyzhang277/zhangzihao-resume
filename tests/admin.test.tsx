@@ -27,6 +27,8 @@ function ownerRepository(overrides: Partial<TestRepository> = {}): TestRepositor
       finishedAt: '2026-08-11T09:00:00.000Z',
     }),
     saveResume: vi.fn().mockResolvedValue(undefined),
+    signIn: vi.fn().mockResolvedValue(undefined),
+    signOut: vi.fn().mockResolvedValue(undefined),
     saveProjectSettings: vi.fn().mockResolvedValue(undefined),
     updateProjectVisibility: vi.fn().mockResolvedValue(undefined),
     updateProjectOverrides: vi.fn().mockResolvedValue(undefined),

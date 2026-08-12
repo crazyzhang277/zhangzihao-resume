@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "sync": "node scripts/syncNow.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.0",

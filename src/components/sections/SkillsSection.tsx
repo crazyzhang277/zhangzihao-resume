@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 
 import type { SkillGroup } from '../../types/content'
 
@@ -34,7 +34,12 @@ export function SkillsSection({ groups }: { groups: SkillGroup[] }) {
       {groups.map((group, index) => (
         <div aria-labelledby={`skill-tab-${index}`} className="skill-panel" hidden={activeIndex !== index} id={`skill-panel-${index}`} key={group.name} role="tabpanel">
           <ul>
-            {group.skills.map((skill) => <li key={skill.name}><strong>{skill.name}</strong><span>{skill.tag}</span></li>)}
+            {group.skills.map((skill, skillIndex) => (
+              <li key={skill.name} style={{ '--item-index': skillIndex } as CSSProperties}>
+                <strong>{skill.name}</strong>
+                <span>{skill.tag}</span>
+              </li>
+            ))}
           </ul>
         </div>
       ))}

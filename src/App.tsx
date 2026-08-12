@@ -76,10 +76,41 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
   const contentRef = useRef<HTMLElement>(null)
   const [resume, setResume] = useState(fallbackResume)
   const [projects, setProjects] = useState(fallbackProjects)
+  const [scrollProgress, setScrollProgress] = useState(0)
   const activeSectionIndex = Math.max(0, publicSectionIds.indexOf(activeSection))
   const activeSectionNumber = activeSectionIndex + 1
   const activeSectionLabel = publicSections[activeSectionIndex]?.label ?? publicSections[0].label
-  const progressStyle = { '--section-progress': activeSectionNumber / publicSections.length } as CSSProperties
+  const progressStyle = { '--section-progress': scrollProgress } as CSSProperties
+
+  useEffect(() => {
+    let frame = 0
+    const updateProgress = () => {
+      frame = 0
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight
+      if (totalHeight > 0) {
+        const ratio = Math.min(1, Math.max(0, window.scrollY / totalHeight))
+        setScrollProgress(ratio)
+      } else {
+        setScrollProgress(0)
+      }
+    }
+
+    const onScroll = () => {
+      if (!frame) {
+        frame = window.requestAnimationFrame(updateProgress)
+      }
+    }
+
+    updateProgress()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (frame) window.cancelAnimationFrame(frame)
+    }
+  }, [])
 
   useEffect(() => {
     if (reducedMotion) return
