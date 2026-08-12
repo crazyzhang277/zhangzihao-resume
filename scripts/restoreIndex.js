@@ -1,15 +1,20 @@
-<!doctype html>
+import fs from 'fs'
+
+const sourceHtml = `<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./assets/favicon-HV1kWBx1.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Zhang Zihao's AIGC resume and portfolio." />
     <title>Zhang Zihao | AIGC Resume</title>
-    <script type="module" crossorigin src="./assets/index-Cf8j-gjG.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BCA-nm5K.css">
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+`
+
+fs.writeFileSync('index.html', sourceHtml, 'utf8')
+console.log('Restored index.html to source entry /src/main.tsx')

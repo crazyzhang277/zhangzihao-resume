@@ -4,7 +4,7 @@ import { mapProjectRecord, sortProjects } from '../data/github'
 import { fallbackResume } from '../data/profile'
 import type { Project, ResumeContent } from '../types/content'
 import { isResumeContent } from './contentRepository'
-import { supabase } from './supabase'
+import { getSupabaseClient, supabase } from './supabase'
 
 export type SyncRunResult = {
   status: 'success' | 'error'
@@ -36,34 +36,35 @@ export interface AdminRepository {
   triggerGitHubSync(): Promise<SyncRunResult>
 }
 
-export function createAdminRepository(client: SupabaseClient | null = supabase): AdminRepository {
+export function createAdminRepository(client?: SupabaseClient | null): AdminRepository {
+  const activeClient = client ?? getSupabaseClient()
   let profileId: string | null = null
 
   return {
-    isConfigured: client !== null,
+    isConfigured: activeClient !== null,
     async getSession() {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { data, error } = await configuredClient.auth.getSession()
       if (error) throw error
       return mapAdminSession(data.session)
     },
     async signIn(email, password) {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { error } = await configuredClient.auth.signInWithPassword({ email, password })
       if (error) throw error
     },
     async signOut() {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { error } = await configuredClient.auth.signOut()
       if (error) throw error
     },
     subscribeToAuthStateChange(subscriber) {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { data } = configuredClient.auth.onAuthStateChange((_event, session) => subscriber(mapAdminSession(session)))
       return () => data.subscription.unsubscribe()
     },
     async getResume() {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { data, error } = await configuredClient.from('profile_content')
         .select('id, content, published')
         .order('updated_at', { ascending: false })
@@ -75,7 +76,7 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
       return record.content
     },
     async getProjects() {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { data, error } = await configuredClient.from('projects').select('*')
         .order('featured_rank', { ascending: true, nullsFirst: false })
         .order('updated_at', { ascending: false })
@@ -84,14 +85,14 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
       return sortProjects(data.filter(isRecord).map(mapProjectRecord).filter((project): project is Project => project !== null))
     },
     async getLatestSyncRun() {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { data, error } = await configuredClient.from('sync_runs').select('*').order('finished_at', { ascending: false }).limit(1)
       if (error) throw error
       const record = Array.isArray(data) ? data[0] : null
       return mapSyncRun(record)
     },
     async saveResume(content) {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       if (!isResumeContent(content)) throw new Error('Resume content is invalid.')
       const payload = { content, published: true, updated_at: new Date().toISOString() }
       const query = profileId
@@ -101,7 +102,7 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
       if (error) throw error
     },
     async saveProjectSettings(githubId, visible, featuredRank, manualTitle, manualDescription) {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { error } = await configuredClient.from('projects')
         .update({
           visible,
@@ -114,21 +115,21 @@ export function createAdminRepository(client: SupabaseClient | null = supabase):
       if (error) throw error
     },
     async updateProjectVisibility(githubId, visible, featuredRank) {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { error } = await configuredClient.from('projects')
         .update({ visible, featured_rank: featuredRank, record_updated_at: new Date().toISOString() })
         .eq('github_id', githubId)
       if (error) throw error
     },
     async updateProjectOverrides(githubId, manualTitle, manualDescription) {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       const { error } = await configuredClient.from('projects')
         .update({ manual_title: manualTitle, manual_description: manualDescription, record_updated_at: new Date().toISOString() })
         .eq('github_id', githubId)
       if (error) throw error
     },
     async triggerGitHubSync() {
-      const configuredClient = requireClient(client)
+      const configuredClient = requireClient(activeClient)
       try {
         const { data, error } = await configuredClient.functions.invoke<SyncRunResult>('sync-github-projects', { method: 'POST' })
         if (isSyncResult(data)) return data

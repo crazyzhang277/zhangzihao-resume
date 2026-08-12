@@ -5,12 +5,11 @@ import { AdminProjects } from './AdminProjects'
 import { createAdminRepository, type AdminRepository, type AdminSession, type SyncRunResult, type SyncRun } from '../../lib/adminRepository'
 import type { Project, ResumeContent } from '../../types/content'
 
-const defaultRepository = createAdminRepository()
-
 type AdminPageProps = { repository?: AdminRepository }
 type PageState = 'loading' | 'unconfigured' | 'unauthenticated' | 'forbidden' | 'error' | 'ready'
 
-export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
+export function AdminPage({ repository }: AdminPageProps) {
+  const activeRepo = repository ?? createAdminRepository()
   const [pageState, setPageState] = useState<PageState>('loading')
   const [resume, setResume] = useState<ResumeContent | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
@@ -36,13 +35,13 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
       const currentLoad = ++loadVersion
       const isCurrent = () => active && currentLoad === loadVersion
       clearOwnerState()
-      if (!repository.isConfigured) {
+      if (!activeRepo.isConfigured) {
         if (isCurrent()) setPageState('unconfigured')
         return
       }
       setPageState('loading')
       try {
-        const session = sessionFromEvent === undefined ? await repository.getSession() : sessionFromEvent
+        const session = sessionFromEvent === undefined ? await activeRepo.getSession() : sessionFromEvent
         if (!isCurrent()) return
         if (!session) {
           setPageState('unauthenticated')
@@ -53,9 +52,9 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
           return
         }
         const [loadedResume, loadedProjects, loadedSync] = await Promise.all([
-          repository.getResume(),
-          repository.getProjects(),
-          repository.getLatestSyncRun(),
+          activeRepo.getResume(),
+          activeRepo.getProjects(),
+          activeRepo.getLatestSyncRun(),
         ])
         if (!isCurrent()) return
         setResume(loadedResume)
@@ -69,18 +68,18 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
       }
     }
 
-    const unsubscribe = repository.isConfigured
-      ? repository.subscribeToAuthStateChange((session) => { void load(session) })
+    const unsubscribe = activeRepo.isConfigured
+      ? activeRepo.subscribeToAuthStateChange((session) => { void load(session) })
       : () => undefined
     void load()
     return () => {
       active = false
       unsubscribe()
     }
-  }, [repository])
+  }, [activeRepo])
 
   async function saveResume(content: ResumeContent) {
-    await repository.saveResume(content)
+    await activeRepo.saveResume(content)
     setResume(content)
   }
 
@@ -88,10 +87,10 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
     setIsSyncing(true)
     setSyncResult(null)
     try {
-      const result = await repository.triggerGitHubSync()
+      const result = await activeRepo.triggerGitHubSync()
       setSyncResult(result)
       if (result.status === 'success') {
-        const [loadedProjects, loadedSync] = await Promise.all([repository.getProjects(), repository.getLatestSyncRun()])
+        const [loadedProjects, loadedSync] = await Promise.all([activeRepo.getProjects(), activeRepo.getLatestSyncRun()])
         setProjects(loadedProjects)
         setLatestSync(loadedSync)
       }
@@ -104,8 +103,8 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
 
   if (pageState === 'loading') return <main className="admin-page" aria-busy="true"><p>Checking administrator access...</p></main>
   if (pageState === 'unconfigured') return <StatePage heading="Admin is unavailable" message="Supabase browser configuration is required before administration can be used." />
-  if (pageState === 'unauthenticated') return <AdminLoginForm onSignIn={repository.signIn} />
-  if (pageState === 'forbidden') return <AdminLoginForm forbidden onSignIn={repository.signIn} />
+  if (pageState === 'unauthenticated') return <AdminLoginForm onSignIn={activeRepo.signIn} />
+  if (pageState === 'forbidden') return <AdminLoginForm forbidden onSignIn={activeRepo.signIn} />
   if (pageState === 'error') return <StatePage heading="Unable to load administration" message={loadError ?? 'The owner data could not be loaded.'} />
   if (!resume) return null
 
@@ -118,7 +117,7 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
             <h1>Resume administration</h1>
             <p>Changes are authorized by Supabase Row Level Security.</p>
           </div>
-          <button className="icon-text-button" onClick={() => void repository.signOut()} type="button">Sign out</button>
+          <button className="icon-text-button" onClick={() => void activeRepo.signOut()} type="button">Sign out</button>
         </div>
       </header>
       <section className="admin-sync" aria-labelledby="admin-sync-heading">
@@ -127,7 +126,7 @@ export function AdminPage({ repository = defaultRepository }: AdminPageProps) {
         <SyncStatus result={syncResult ?? latestSync} />
       </section>
       <AdminContentForm content={resume} onSave={saveResume} />
-      <AdminProjects onSaveSettings={repository.saveProjectSettings} projects={projects} />
+      <AdminProjects onSaveSettings={activeRepo.saveProjectSettings} projects={projects} />
     </main>
   )
 }
