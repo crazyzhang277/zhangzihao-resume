@@ -44,9 +44,17 @@ export function createAdminRepository(client?: SupabaseClient | null): AdminRepo
     isConfigured: activeClient !== null,
     async getSession() {
       const configuredClient = requireClient(activeClient)
-      const { data, error } = await configuredClient.auth.getSession()
-      if (error) throw error
-      return mapAdminSession(data.session)
+      try {
+        const timeoutPromise = new Promise<{ data: { session: null }; error: null }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null }, error: null }), 2500)
+        )
+        const sessionPromise = configuredClient.auth.getSession()
+        const res = await Promise.race([sessionPromise, timeoutPromise])
+        if (res.error) throw res.error
+        return mapAdminSession(res.data.session)
+      } catch {
+        return null
+      }
     },
     async signIn(email, password) {
       const configuredClient = requireClient(activeClient)

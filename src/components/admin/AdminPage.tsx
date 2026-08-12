@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { AdminContentForm } from './AdminContentForm'
 import { AdminProjects } from './AdminProjects'
@@ -9,7 +9,7 @@ type AdminPageProps = { repository?: AdminRepository }
 type PageState = 'loading' | 'unconfigured' | 'unauthenticated' | 'forbidden' | 'error' | 'ready'
 
 export function AdminPage({ repository }: AdminPageProps) {
-  const activeRepo = repository ?? createAdminRepository()
+  const activeRepo = useMemo(() => repository ?? createAdminRepository(), [repository])
   const [pageState, setPageState] = useState<PageState>('loading')
   const [resume, setResume] = useState<ResumeContent | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
