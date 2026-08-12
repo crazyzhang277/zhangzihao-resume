@@ -186,6 +186,26 @@ export function PublicResume({ reducedMotion: reducedMotionOverride, repository 
   )
 }
 
+function isAdminRoute() {
+  if (typeof window === 'undefined') return false
+  const path = window.location.pathname.toLowerCase()
+  const hash = window.location.hash.toLowerCase()
+  const search = window.location.search.toLowerCase()
+  return path.startsWith('/admin') || path.includes('/admin') || hash.includes('admin') || search.includes('admin')
+}
+
 export function App() {
-  return window.location.pathname.startsWith('/admin') ? <AdminPage /> : <PublicResume />
+  const [isAdmin, setIsAdmin] = useState(isAdminRoute)
+
+  useEffect(() => {
+    const handleLocationChange = () => setIsAdmin(isAdminRoute())
+    window.addEventListener('popstate', handleLocationChange)
+    window.addEventListener('hashchange', handleLocationChange)
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange)
+      window.removeEventListener('hashchange', handleLocationChange)
+    }
+  }, [])
+
+  return isAdmin ? <AdminPage /> : <PublicResume />
 }
