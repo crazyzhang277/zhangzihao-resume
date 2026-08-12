@@ -5,4 +5,4 @@ dist/
 .env
 .env.local
 scratch_bundle.js
-scripts/
+scripts/syncNow.js
